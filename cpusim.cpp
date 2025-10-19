@@ -41,25 +41,34 @@ int main(int argc, char* argv[])
 	}
 	string line; 
 	int i = 0;
-	while (infile) {
-			infile>>line;
-			stringstream line2(line);
-			char x; 
-			line2>>x;
-			instMem[i] = x; // be careful about hex
-			i++;
-			line2>>x;
-			instMem[i] = x; // be careful about hex
-			//cout<<instMem[i]<<endl;
-			i++;
-		}
+	// while (infile) {
+	// 		infile>>line;
+	// 		stringstream line2(line);
+	// 		char x; 
+	// 		line2>>x;
+	// 		instMem[i] = x; // be careful about hex
+	// 		i++;
+	// 		line2>>x;
+	// 		instMem[i] = x; // be careful about hex
+	// 		//cout<<instMem[i]<<endl;
+	// 		i++;
+	// 	}
+	while (infile >> line && i < 4096) {
+	    unsigned int val = 0;
+	    stringstream(line) >> std::hex >> val; // convert "37" → 0x37
+	    instMem[i++] = static_cast<char>(val & 0xFF);
+	}
+
 	int maxPC= i/4; 
 
 	/* Instantiate your CPU object here.  CPU class is the main class in this project that defines different components of the processor.
 	CPU class also has different functions for each stage (e.g., fetching an instruction, decoding, etc.).
 	*/
 
-	CPU myCPU;  // call the approriate constructor here to initialize the processor...  
+	CPU myCPU = CPU(instMem);  // call the approriate constructor here to initialize the processor...  
+
+	// Pass in instruction to the CPU
+
 	// make sure to create a variable for PC and resets it to zero (e.g., unsigned int PC = 0); 
 
 	/* OPTIONAL: Instantiate your Instruction object here. */
@@ -69,19 +78,25 @@ int main(int argc, char* argv[])
 	while (done == true) // processor's main loop. Each iteration is equal to one clock cycle.  
 	{
 		//fetch
-		
+		myCPU.fetch();
 
 		// decode
+		// myCPU.decode()
+
+		// execute
+        // myCPU.execute();
+
+
 		
 		// ... 
 		myCPU.incPC();
 		if (myCPU.readPC() > maxPC)
 			break;
 	}
-	int a0 =0;
-	int a1 =0;  
+	int a0 = 0;
+	int a1 = 0;  
 	// print the results (you should replace a0 and a1 with your own variables that point to a0 and a1)
-	  cout << "(" << a0 << "," << a1 << ")" << endl;
+	cout << "(" << a0 << "," << a1 << ")" << endl;
 	
 	return 0;
 
