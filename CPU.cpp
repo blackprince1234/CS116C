@@ -10,26 +10,6 @@ CPU::CPU(char inmemory[4096])
 		dmemory[i] = (0);
 	}
 }
-// So memory is only actually used for LW and SW, and for operations like addi, and subi, it will be called in writeback() where registerFile of the rd is updated with the new data
-/*
-
-Exactly! You got it right. Here's a quick recap with some emphasis:
-
-Memory stage (memory()) is only actively involved in load (LW) and store (SW) instructions:
-
-For LW, it reads from dataMem and loads data into the pipeline register to later write back to the register file.
-
-For SW, it writes data from a register into dataMem at the calculated address.
-
-For arithmetic or logic instructions like ADDI, SUB, ADD, etc., the memory stage does nothing special — the ALU results are passed through unchanged.
-
-The writeback stage (writeback()) is where the register file gets updated:
-
-For load instructions, it writes the data read from memory into the destination register.
-
-For other ALU operations, it writes the ALU result into the destination register.
-
-Store instructions do not write back to the register file.*/
 void CPU::fetch() {
 	std::cout << "Current PC: " << PC << std::endl;
 
@@ -67,48 +47,219 @@ void CPU::decode() {
     std::cout << "RS1        (5-bit):  " << std::bitset<5>(rs1) << '\n';
     std::cout << "RS2        (5-bit):  " << std::bitset<5>(rs2) << '\n';
 
+
+	// Update the IDEX structure
+	idexNext.pc = ifidCurr.pc;
+    idexNext.readData1 = registerFile[rs1];
+    idexNext.readData2 = registerFile[rs2];
+    idexNext.rd = (ifidCurr.instruction >> 7) & 0x1f;
+    idexNext.immediate = (int32_t) ifidCurr.instruction >> 20; 
+
 	// Check which op code matches
 	/* 	
 		ADDI, LUI, ORI, SLTIU, SRA, SUB, AND, LBU, LW, SH, SW, BNE, JALR
 	*/
 
-	// If addi -> Check the op code, func3, func7, rs1, rst2, etc. 
-	// Intermediate register
-	if (opcode == ITYPE) {
-		if (0x0 == func3) { cout << "Add operation" << endl; }
-        else if (0x6 == func3) { cout << "Or operation" << endl; }
-		else if (0x3 == func3) {cout << "SLTIU operation" << endl;}
+	if (opcode == ITYPE) {		// Intermediate computation
+		if (0x0 == func3) { idexNext.operation = Op::ADDI; }
+        else if (0x6 == func3) { idexNext.operation = Op::ORI; }
+		else if (0x3 == func3) { idexNext.operation = Op::SLTIU; }
 	}
-	// Using registers for computation
-	else if (opcode == RTYPE) {
+	// SUB, AND, SRA
+	else if (opcode == RTYPE) {	// Using registers for computation
 		// SRA = 101
-		if(0x5 == func3) {
-			cout << "SRA Operation" << endl;
+		if(0x5 == func3 && func7 == 0x20) {
+			idexNext.operation = Op::SRA;
 		}
-		// Can either be add or subtract
-		else if(func3 == 0x0) {
-			if(func7 == 0x0) {
-				cout << "Add operation (RTYPE)" << endl;
-			}
-			else if (func7 == 0x20) {
-				cout << "Subtract operation (RTYPE)" << endl;
-			}
-			else {cout << "Operation not recognized-- RTYPE" << endl;}
+		else if(func3 == 0x0 && func7 == 0x20) { idexNext.operation = Op::SUB; }
+		else if(func3 == 0x7) {
+			idexNext.operation = Op::AND;
 		}
 		else {cout << "Operation not recognized-- RTYPE" << endl;}
 	}
-	else if(opcode == LUI) {
-		cout << "LUI Operation" << endl;
+	else if (opcode == LOADWORD) {		// LW and LBU
+		if (func3 == 0x2) {
+			idexNext.operation = Op::LW;
+		} else if (func3 == 0x4) {
+			idexNext.operation = Op::LBU;
+		}
 	}
+	else if (opcode == STOREWORD) {		// SW and SH
+		// auto imm11_5 = (int32_t)(ifidCurr.instruction & 0xfe000000);
+		// auto imm4_0 = (int32_t)((ifidCurr.instruction & 0xf80) << 13);
+		// idexNext.immediate = (imm11_5 + imm4_0) >> 20;
+		auto inst = ifidCurr.instruction;
+		int32_t immS = (int32_t)(((inst >> 25) << 5) | ((inst >> 7) & 0x1F));
+		immS = (immS << 20) >> 20;
+		idexNext.immediate = immS;
 
+		if (func3 == 0x2) {
+			idexNext.operation = Op::SW;
+		} else if (func3 == 0x1) {
+			idexNext.operation = Op::SH;
+		}
+	}
+	else if (opcode == JUMP && func3 == 0x0) {		// JALR
+		idexNext.operation = Op::JALR;
+	}
+	else if (opcode == 0x63 && func3 == 0x1) {
+		idexNext.operation = Op::BNE;
+	}
+	else if(opcode == 0x37) {
+		idexNext.operation = Op::LUI;
+	}
 }	
+
+// Execute the actual task
+void CPU::execute() {
+	exmemNext.pc = idexCurr.pc;
+    exmemNext.operation = idexCurr.operation;
+    exmemNext.readData2 = idexCurr.readData2;
+    exmemNext.rd = idexCurr.rd;
+
+	exmemNext.takeBranch   = false;
+    exmemNext.branchTarget = 0;
+    exmemNext.doJump       = false;
+    exmemNext.jumpTarget   = 0;
+
+	switch(idexCurr.operation) {
+		case Op::ADDI:
+            exmemNext.aluResult = idexCurr.readData1 + idexCurr.immediate;
+            break;
+		case Op::LUI:
+			exmemNext.aluResult = static_cast<uint32_t>(idexCurr.immediate);
+	    	break;
+		case Op::ORI:
+            exmemNext.aluResult = idexCurr.readData1 | idexCurr.immediate;
+            break;
+		case Op::SLTIU:
+			exmemNext.aluResult = (static_cast<uint32_t>(idexCurr.readData1) < static_cast<uint32_t>(idexCurr.immediate)) ? 1 : 0;
+			break;
+		 case Op::SRA: {
+            // Arithmetic right shift: sign-propagating
+            uint32_t shamt = idexCurr.readData2 & 0x1F;         // RV32: 5-bit
+            int32_t  s     = static_cast<int32_t>(idexCurr.readData1);
+            exmemNext.aluResult = static_cast<uint32_t>(s >> shamt);
+            break;
+        }
+        case Op::SUB:
+            exmemNext.aluResult = idexCurr.readData1 - idexCurr.readData2;
+            break;
+        case Op::AND:
+            exmemNext.aluResult = idexCurr.readData1 & idexCurr.readData2;
+            break;
+        case Op::LW:
+        case Op::SW:
+		case Op::SH:
+		case Op::LBU:
+            exmemNext.aluResult = idexCurr.readData1 + idexCurr.immediate;
+            break;
+		case Op::BNE:
+            if (idexCurr.readData1 != idexCurr.readData2) {
+                exmemNext.takeBranch   = true;
+                exmemNext.branchTarget = idexCurr.pc + idexCurr.immediate; // B-type offset already sign-extended
+            }
+            break;
+
+        case Op::JALR: {
+            exmemNext.aluResult = idexCurr.pc + 4;
+            uint32_t t = static_cast<uint32_t>(
+                static_cast<int32_t>(idexCurr.readData1) + idexCurr.immediate
+            );
+            exmemNext.jumpTarget = t & ~1u;
+            exmemNext.doJump     = true;
+            break;
+        }
+        case Op::ZE:
+            exmemNext.aluResult = ZERO;
+            break;
+
+        case Op::ERROR:
+            break;
+    }
+}
+// Store in the memory
+void CPU::memory() {
+	memwbNext.rd = exmemCurr.rd;
+    memwbNext.aluResult = exmemCurr.aluResult;
+    memwbNext.operation = exmemCurr.operation;
+
+    int32_t lByte1, lByte2, lByte3, lByte4;
+    uint8_t sByte1, sByte2, sByte3, sByte4;
+    switch(exmemCurr.operation) {
+        case Op::LW:
+            // Fetch 4 bytes from the data memory in little endian form.
+            lByte1 = dmemory[exmemCurr.aluResult];
+            lByte2 = dmemory[exmemCurr.aluResult + 1];
+            lByte3 = dmemory[exmemCurr.aluResult + 2];
+            lByte4 = dmemory[exmemCurr.aluResult + 3];
+
+            // Convert to big endian and store as the aluResult
+            memwbNext.memData = (lByte4 << 24) + (lByte3 << 16) + (lByte2 << 8) + lByte1;
+            break;
+		case Op::LBU: 
+			lByte1 = dmemory[exmemCurr.aluResult];
+			memwbNext.memData = static_cast<uint32_t>(lByte1) & 0xFF;
+            break;
+
+        case Op::SW:
+            // Separate bytes of readData2
+            sByte1 = (exmemCurr.readData2 >> 24) & 0xff000000;
+            sByte2 = (exmemCurr.readData2 >> 16) & 0xff0000;
+            sByte3 = (exmemCurr.readData2 >> 8) & 0xff00;
+            sByte4 = exmemCurr.readData2 & 0xff;
+            // Store in dataMem in little endian form
+            dmemory[exmemCurr.aluResult] = sByte4;
+            dmemory[exmemCurr.aluResult + 1] = sByte3;
+            dmemory[exmemCurr.aluResult + 1] = sByte2;
+            dmemory[exmemCurr.aluResult + 1] = sByte1;
+            break;
+		case Op::SH:
+            // Separate bytes of readData2
+			sByte1 = (exmemCurr.readData2 >> 8) & 0xFF;  // high byte
+			sByte2 = exmemCurr.readData2 & 0xFF;         // low byte
+
+			// Store in data memory in little endian order
+			dmemory[exmemCurr.aluResult]     = sByte2;   // lower byte
+			dmemory[exmemCurr.aluResult + 1] = sByte1;   // higher byte
+            break;
+
+        default:
+            break;
+    }
+}
 unsigned long CPU::readPC()
 {
 	return PC;
 }
+// Increment counter based
 void CPU::incPC()
 {
-	PC+=4;
+	// PC+=4;
+	if (exmemCurr.doJump)      PC = exmemCurr.jumpTarget;
+	else if (exmemCurr.takeBranch) PC = exmemCurr.branchTarget;
+	else                        PC += 4;
 }
 
-// Add other functions here ... 
+void CPU::printAll() {
+    std::cout << "=== CPU STATE ===" << std::endl;
+
+    // Print Program Counter
+    std::cout << "PC: " << PC << std::endl;
+
+    // Print Registers
+    std::cout << "--- Registers ---" << std::endl;
+    for (int i = 0; i < 32; ++i) {
+        std::cout << "x" << std::setw(2) << std::setfill('0') << i 
+                  << ": " << std::dec << registerFile[i] 
+                  << " (0x" << std::hex << registerFile[i] << ")" << std::dec << std::endl;
+    }
+
+    // Print part of Data Memory (first 16 bytes)
+    std::cout << "--- Data Memory (first 16 bytes) ---" << std::endl;
+    for (int i = 0; i < 16; ++i) {
+        std::cout << "dmemory[" << i << "]: " << dmemory[i] << std::endl;
+    }
+
+    std::cout << "==================" << std::endl;
+}

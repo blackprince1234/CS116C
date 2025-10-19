@@ -96,6 +96,7 @@ int main(int argc, char* argv[])
 	int a0 = 0;
 	int a1 = 0;  
 	// print the results (you should replace a0 and a1 with your own variables that point to a0 and a1)
+	myCPU.printAll();
 	cout << "(" << a0 << "," << a1 << ")" << endl;
 	
 	return 0;
