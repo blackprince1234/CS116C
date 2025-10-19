@@ -81,7 +81,7 @@ int main(int argc, char* argv[])
 		myCPU.fetch();
 
 		// decode
-		// myCPU.decode()
+		myCPU.decode();
 
 		// execute
         // myCPU.execute();
