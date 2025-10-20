@@ -26,7 +26,7 @@ using namespace std;
 #define JUMP 0x67
 class CPU {
 private:
-	int dmemory[4096]; //data memory byte addressable in little endian fashion;
+	uint8_t dmemory[1000000]; //data memory byte addressable in little endian fashion;
 	uint8_t instMemory[4096];
 	unsigned long PC; //pc 
 	int32_t registerFile[32]; 	// Access the value of each register
@@ -37,12 +37,11 @@ public:
 	void incPC();
 	void fetch();
 	void decode();
-	// void execute();
 	void printAll();
 	// void memory();
 	// void writeBack();
-	void printReg();
 	uint32_t cur_instruction = 0;
+	void printReg();
 	// void tick();
 	// Different types of operations
 	enum class Op {

@@ -17,8 +17,8 @@ ALU::ALU(
     ALUControl* aluControl,
     int32_t (&regFile)[32],     // Reference to 32-register file
     int instruction,
-    int (&mem)[4096]            // Reference to memory
-): regs(regFile), memory(mem)    // Member initializer list
+    uint8_t (&mem)[1000000]            // Reference to memory
+): regs(regFile), memory(mem) // Member initializer list
 {
     this->rs1 = data1;
     this->rs2 = data2;
@@ -29,9 +29,14 @@ ALU::ALU(
 
 int ALU::compute_immediate() {
     // For the immediate passed, need to check the immediate
-    return (instruction >> 20) & 0xFFF;
+    return (int32_t)instruction >> 20; 
 }
-
+auto ALU::getImmS() {
+    int32_t imm = ((instruction >> 7) & 0x1F) | (((instruction >> 25) & 0x7F) << 5);
+    // sign-extend 12-bit
+    if (imm & 0x800) imm |= 0xFFFFF000;
+    return imm;
+};
 
 void ALU::compute() {
     // Check if 
@@ -47,6 +52,7 @@ void ALU::compute() {
             break;
         case 0x0: // ADDI
             cout << "AddI execution" << endl;
+            cout << "IMMEDIATE " << compute_immediate() << endl;
             result = regs[rs1] + compute_immediate();
             // Check if should store in register file
             break;
@@ -60,7 +66,6 @@ void ALU::compute() {
             result = (static_cast<unsigned int>(regs[rs1]) < static_cast<unsigned int>(compute_immediate())) ? 1 : 0;
             break;
         
-
         case 0x4: // SUB
             cout << "SUB execution" << endl;
             result = regs[rs1] - regs[rs2];
@@ -85,15 +90,34 @@ void ALU::compute() {
             } 
             else if (opcode == 0x23) {    // STORE group (SH/SW)
                 cout << "STORE Execution" << endl;
-                int32_t immS = ((instruction >> 25) << 5) | ((instruction >> 7) & 0x1F);
+                int32_t immS = getImmS();
                 result = regs[rs1] + immS;                  // effective address
             } 
             break;
         }
-        case 0xC: // Branch (BNE)
-            // if (rs1 != rs2) {
-            //     pc += rd; // branch taken
-            // }
+        case 0xC: // Branch (BNE) or 
+            if(aluControl->control.branch == 0) {   // If subtraction
+                result = regs[rs1] - regs[rs2];
+            }
+            // Either BNE or JALR
+            else {
+                uint32_t opcode = instruction & 0x7F;
+                if(opcode == 0x67) { //JALR
+                    int32_t immI = compute_immediate();           // I-type imm
+                    result = pc + 4;                          // reuse normal RegWrite path
+                    uint32_t target = (uint32_t)((int32_t)regs[rs1] + immI);
+                    target &= ~1u;                                // clear bit 0
+                    pc_target = target;
+                    pc_write  = true;// tell CPU to jump
+                }
+                else if(opcode == 0x63) {   //BNE
+                    if (regs[rs1] != regs[rs2]) {
+                        int32_t immB = getImmB();
+                        pc_target = pc + immB;
+                        pc_write  = true;                     // branch taken
+                    }
+                }
+            }
             break;
 
         default:
@@ -104,28 +128,6 @@ void ALU::compute() {
 }
 void ALU::writeBack() {
     cout << "Result: " << result << endl;
-    
-    // LW, LBU (Read the memory at address[result])
-    // if (aluControl -> control.MemRead == 1) {
-    //     // Result orignally has the computed memory address.
-    //     if(aluControl->func3 == 0x2) {      // LW
-    //         cout << "Executing lw" << endl;
-    //         uint32_t word_index = result >> 2;
-    //         uint32_t byte_offset = result & 0x3;
-        
-    //         // Read the 32-bit word from memory
-    //         result = memory[word_index];
-    //     }
-    //     else if (aluControl -> func3 == 0x4) {  // LBU
-    //         cout << "Executing LBU" << endl;
-    //         int shift_amount = result * 8;
-    //         uint32_t byte_value = (result >> shift_amount) & 0xFF;
-            
-    //         // Update result for the write-back stage
-    //         result = byte_value;
-    //         result = memory[result];
-    //     }
-    // }
     // 1) LOADS
     if (aluControl->control.MemRead == 1) {
         uint32_t addr = static_cast<uint32_t>(result);
@@ -139,10 +141,12 @@ void ALU::writeBack() {
                 result |= (uint32_t)memory[addr+1] << 8;
                 result |= (uint32_t)memory[addr+2] << 16;
                 result |= (uint32_t)memory[addr+3] << 24; 
+                cout << "Loaded word: " << result << endl;
             }
              // LBU 
             else if (aluControl->func3 == 0x4) {  
                 result = (uint32_t)memory[addr]; // zero-extend
+                cout << "Loaded byte: " << result << endl;
             } 
         }
     }
@@ -170,10 +174,11 @@ void ALU::writeBack() {
         regs[rd] = result;
     }
     // SW, SH
-    else if(aluControl->control.MemWr == 1) {
-        cout << "SW and SH" << endl;
+    else if(aluControl->control.branch == 1) {
+        cout << "Processing jumps" << endl;
     }
 }
 // TODO: After computing the result, either add to the register file, or write it to the memory
 // TODO: Also need to differentiate between LBUI and LW, and SW and SH.
-// TODO: ADDI Not correclty executing (-32)
+// TODO: Need to calculate PC Counter for JALR and BNE.     
+    

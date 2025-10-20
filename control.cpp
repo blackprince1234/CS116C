@@ -42,6 +42,11 @@ Controller::Controller(int instruction) {
     }   
     else if (instruction == 0b1100011) {     // BEQ
         branch = 1;
+        is_lui = MemRead = MemToReg = RegWrite = MemWr = ALUSrc = 0;
+        ALUOp = 0x3;    // SUBTRACT
+    }
+    else if (instruction == 0b1100111) {    // JALR
+        branch = 1;
         is_lui = MemRead = MemToReg = RegWrite = MemWr = ALUSrc= 0;
         ALUOp = 0x3;    // SUBTRACT
     }

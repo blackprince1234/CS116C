@@ -57,7 +57,12 @@ int main(int argc, char* argv[])
 		myCPU.fetch();        // fill ifidNext
 		myCPU.decode();       // produce idexNext
 		// myCPU.execute();      // produce exmemNext
-		myCPU.incPC();        // update PC with branch/jump/seq
+		if (myCPU.alu.pc_write) {
+		    PC = alu.pc_target;     // jump/branch taken
+		} else {
+		    myCPU.incPC();                // normal PC += 4
+		}
+		// myCPU.incPC();        // update PC with branch/jump/seq
 		// myCPU.printReg();
 	}
 	int a0 = 0;

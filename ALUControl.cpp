@@ -9,9 +9,6 @@ ALUControl::ALUControl(int aluOp, uint32_t func3, uint32_t func7): control(0) {
 void ALUControl::set_output() {
     // I-type, need to check func3 and func7
     if (aluOp == 0x0) {
-        // cout << "I-type" << endl;
-        // cout << "Func3: " << func3 << endl;
-        
         // LUI (00 11)
         if(control.is_lui == 1) {
             // cout << "LUI Operation" << endl;
@@ -56,4 +53,3 @@ void ALUControl::set_output() {
         four_bit_output = 0xC;
     }
 }
-
