@@ -37,7 +37,9 @@ public:
 	void execute();
 	void printAll();
 	void memory();
-
+	void writeBack();
+	void printReg();
+	void tick();
 	// Different types of operations
 	enum class Op {
 		ADDI,
@@ -57,7 +59,7 @@ public:
 		ERROR,     
     };
 // ADDI, LUI, ORI, SLTIU, SRA, SUB, AND, LBU, LW, SH, SW, BNE, JALR
-
+	
 
 
 	struct IFID {

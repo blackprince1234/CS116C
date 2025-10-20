@@ -41,18 +41,6 @@ int main(int argc, char* argv[])
 	}
 	string line; 
 	int i = 0;
-	// while (infile) {
-	// 		infile>>line;
-	// 		stringstream line2(line);
-	// 		char x; 
-	// 		line2>>x;
-	// 		instMem[i] = x; // be careful about hex
-	// 		i++;
-	// 		line2>>x;
-	// 		instMem[i] = x; // be careful about hex
-	// 		//cout<<instMem[i]<<endl;
-	// 		i++;
-	// 	}
 	while (infile >> line && i < 4096) {
 	    unsigned int val = 0;
 	    stringstream(line) >> std::hex >> val; // convert "37" → 0x37
@@ -75,28 +63,24 @@ int main(int argc, char* argv[])
 	//Instruction myInst; 
 	
 	bool done = true;
+	// myCPU.printAll();
 	while (done == true) // processor's main loop. Each iteration is equal to one clock cycle.  
 	{
-		//fetch
-		myCPU.fetch();
-
-		// decode
-		myCPU.decode();
-
-		// execute
-        // myCPU.execute();
-
-
-		
-		// ... 
-		myCPU.incPC();
+		myCPU.fetch();        // fill ifidNext
+		myCPU.decode();       // produce idexNext
+		myCPU.execute();      // produce exmemNext
+		myCPU.memory();       // produce memwbNext
+		myCPU.writeBack();    // <-- actually commit to registerFile using memwbCurr
+		myCPU.incPC();        // update PC with branch/jump/seq
+		myCPU.tick();         // latch *Next into *Curr and clear *Next
+		// myCPU.printReg();
 		if (myCPU.readPC() > maxPC)
 			break;
 	}
 	int a0 = 0;
 	int a1 = 0;  
 	// print the results (you should replace a0 and a1 with your own variables that point to a0 and a1)
-	myCPU.printAll();
+	// myCPU.printAll();
 	cout << "(" << a0 << "," << a1 << ")" << endl;
 	
 	return 0;

@@ -60,6 +60,8 @@
         "__nullptr": "cpp",
         "chrono": "cpp",
         "compare": "cpp",
-        "algorithm": "cpp"
+        "algorithm": "cpp",
+        "__memory": "cpp",
+        "filesystem": "cpp"
     }
 }

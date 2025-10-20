@@ -9,27 +9,21 @@ CPU::CPU(char inmemory[4096])
 	{
 		dmemory[i] = (0);
 	}
+	for (int i = 0; i < 32; i++) {
+		registerFile[i] = 0;
+	}
+	
 }
 void CPU::fetch() {
-	std::cout << "Current PC: " << PC << std::endl;
-
 	// Fetch the next 4 bytes. Each instruction is 4 bytes long
 	if (PC + 3 < 4096) {  // assuming instMemory[4096] is a raw array
 		uint32_t byte1 = static_cast<uint8_t>(instMemory[PC]);
 		uint32_t byte2 = static_cast<uint8_t>(instMemory[PC + 1]);
 		uint32_t byte3 = static_cast<uint8_t>(instMemory[PC + 2]);
 		uint32_t byte4 = static_cast<uint8_t>(instMemory[PC + 3]);
-		
-		// std::cout << "Bytes: "
-		//           << std::hex << std::uppercase << std::setfill('0')
-		//           << "0x" << std::setw(2) << byte1 << " "
-		//           << "0x" << std::setw(2) << byte2 << " "
-		//           << "0x" << std::setw(2) << byte3 << " "
-		//           << "0x" << std::setw(2) << byte4
-		//           << std::dec << std::endl;
 
-	    ifidCurr.instruction = (byte4 << 24) + (byte3 << 16) + (byte2 << 8) + byte1;
-		// cout << "Next instruction: " << ifidCurr.instruction << endl;
+	    ifidNext.instruction = (byte4 << 24) + (byte3 << 16) + (byte2 << 8) + byte1;
+        ifidNext.pc = PC;
 	}
 }
 
@@ -39,13 +33,14 @@ void CPU::decode() {
     uint32_t func7 = (ifidCurr.instruction >> 25) & 0x7f;
     uint32_t rs1 = (ifidCurr.instruction >> 15) & 0x1f;
     uint32_t rs2 = (ifidCurr.instruction >> 20) & 0x1f;
+    uint32_t rd = (ifidCurr.instruction >> 7) & 0x1F;
 
-	std::cout << "Instruction (32-bit): " << std::bitset<32>(ifidCurr.instruction) << '\n';
-    std::cout << "Opcode     (7-bit):  " << std::bitset<7>(opcode) << '\n';
-    std::cout << "Func3      (3-bit):  " << std::bitset<3>(func3) << '\n';
-    std::cout << "Func7      (7-bit):  " << std::bitset<7>(func7) << '\n';
-    std::cout << "RS1        (5-bit):  " << std::bitset<5>(rs1) << '\n';
-    std::cout << "RS2        (5-bit):  " << std::bitset<5>(rs2) << '\n';
+	// std::cout << "Instruction (32-bit): " << std::bitset<32>(ifidCurr.instruction) << '\n';
+    // std::cout << "Opcode     (7-bit):  " << std::bitset<7>(opcode) << '\n';
+    // std::cout << "Func3      (3-bit):  " << std::bitset<3>(func3) << '\n';
+    // std::cout << "Func7      (7-bit):  " << std::bitset<7>(func7) << '\n';
+    // std::cout << "RS1        (5-bit):  " << std::bitset<5>(rs1) << '\n';
+    // std::cout << "RS2        (5-bit):  " << std::bitset<5>(rs2) << '\n';
 
 
 	// Update the IDEX structure
@@ -53,62 +48,96 @@ void CPU::decode() {
     idexNext.readData1 = registerFile[rs1];
     idexNext.readData2 = registerFile[rs2];
     idexNext.rd = (ifidCurr.instruction >> 7) & 0x1f;
-    idexNext.immediate = (int32_t) ifidCurr.instruction >> 20; 
+    idexNext.immediate = ((int32_t)ifidCurr.instruction) >> 20;  // Arithmetic shift
 
-	// Check which op code matches
-	/* 	
-		ADDI, LUI, ORI, SLTIU, SRA, SUB, AND, LBU, LW, SH, SW, BNE, JALR
-	*/
 
-	if (opcode == ITYPE) {		// Intermediate computation
-		if (0x0 == func3) { idexNext.operation = Op::ADDI; }
-        else if (0x6 == func3) { idexNext.operation = Op::ORI; }
-		else if (0x3 == func3) { idexNext.operation = Op::SLTIU; }
+	if (opcode == ITYPE) {		
+		if (0x0 == func3) { 
+            idexNext.operation = Op::ADDI; 
+            cout << "ADDI " << rd << " " << rs1 <<  " " << idexNext.immediate << endl;
+        }
+        else if (0x6 == func3) { 
+            cout << "ORI " << rd << " " << rs1 <<  " " << idexNext.immediate << endl;
+            idexNext.operation = Op::ORI; 
+        }
+		else if (0x3 == func3) { 
+            cout << "SLTIU " << rd << " " << rs1 <<  " " << idexNext.immediate << endl;
+            idexNext.operation = Op::SLTIU; 
+        }
 	}
-	// SUB, AND, SRA
+	// SUB, AND, SRA // rs1 - rs2
 	else if (opcode == RTYPE) {	// Using registers for computation
 		// SRA = 101
-		if(0x5 == func3 && func7 == 0x20) {
+		if(func3 == 0x5 && func7 == 0x20) {
 			idexNext.operation = Op::SRA;
+            cout << "RSA " << rd << ", " << rs1 << "," << rs2 << endl;
 		}
-		else if(func3 == 0x0 && func7 == 0x20) { idexNext.operation = Op::SUB; }
+		else if(func3 == 0x0 && func7 == 0x20) { 
+            idexNext.operation = Op::SUB; 
+            cout << "SUB " << rd << ", " << rs1 << "," << rs2 << endl;
+        }
 		else if(func3 == 0x7) {
 			idexNext.operation = Op::AND;
+            cout << "AND " << rd << ", " << rs1 << "," << rs2 << endl;
 		}
-		else {cout << "Operation not recognized-- RTYPE" << endl;}
 	}
 	else if (opcode == LOADWORD) {		// LW and LBU
 		if (func3 == 0x2) {
+            
 			idexNext.operation = Op::LW;
 		} else if (func3 == 0x4) {
 			idexNext.operation = Op::LBU;
 		}
 	}
-	else if (opcode == STOREWORD) {		// SW and SH
-		// auto imm11_5 = (int32_t)(ifidCurr.instruction & 0xfe000000);
-		// auto imm4_0 = (int32_t)((ifidCurr.instruction & 0xf80) << 13);
-		// idexNext.immediate = (imm11_5 + imm4_0) >> 20;
-		auto inst = ifidCurr.instruction;
-		int32_t immS = (int32_t)(((inst >> 25) << 5) | ((inst >> 7) & 0x1F));
-		immS = (immS << 20) >> 20;
-		idexNext.immediate = immS;
 
+	else if (opcode == STOREWORD) {	
+		auto inst = ifidCurr.instruction;
+        uint32_t imm_11_5 = (inst >> 25) & 0x7F;  // 7 bits immediate
+        uint32_t imm_4_0  = (inst >> 7) & 0x1F;   // 5 bits immediate
+        uint32_t imm = (imm_11_5 << 5) | imm_4_0;        // Combine into 12-bit value
+		idexNext.immediate = imm;
+        // SW rd, offset(rs1)
 		if (func3 == 0x2) {
 			idexNext.operation = Op::SW;
+            cout << "SW " << rs2 << " " << imm << " " << rs1 << endl;
+            
 		} else if (func3 == 0x1) {
+            cout << "SH " << rs2 << " " << imm << " " << rs1 << endl;
 			idexNext.operation = Op::SH;
 		}
+
 	}
 	else if (opcode == JUMP && func3 == 0x0) {		// JALR
 		idexNext.operation = Op::JALR;
 	}
+    // BNE
 	else if (opcode == 0x63 && func3 == 0x1) {
-		idexNext.operation = Op::BNE;
-	}
+        idexNext.operation = Op::BNE;
+        uint32_t inst = ifidCurr.instruction;
+        int32_t immB =
+            ((inst >> 31) & 0x1) << 12 |   // imm[12]
+            ((inst >> 7)  & 0x1) << 11 |   // imm[11]
+            ((inst >> 25) & 0x3F) << 5 |   // imm[10:5]
+            ((inst >> 8)  & 0xF) << 1;     // imm[4:1]
+        // sign-extend 13-bit and make it byte address (already <<1 above)
+        immB = (immB << 19) >> 19;
+        idexNext.immediate = immB;
+    }
+    // LUI
 	else if(opcode == 0x37) {
 		idexNext.operation = Op::LUI;
+        // Overwrite immediate (format is different)
+        idexNext.immediate = ifidCurr.instruction >> 12;
+        cout << "LUI " << idexNext.rd  << " " << idexNext.immediate << endl;
 	}
-}	
+}
+
+// For debugging: print individual instruction
+void printInstruction(string method, string src, string dest) {
+
+
+
+}
 
 // Execute the actual task
 void CPU::execute() {
@@ -121,16 +150,19 @@ void CPU::execute() {
     exmemNext.branchTarget = 0;
     exmemNext.doJump       = false;
     exmemNext.jumpTarget   = 0;
-
+    std::cout << "Current operation: " << static_cast<int>(idexCurr.operation) << std::endl;
 	switch(idexCurr.operation) {
 		case Op::ADDI:
             exmemNext.aluResult = idexCurr.readData1 + idexCurr.immediate;
+            cout << "Execute: Add operation" << endl;
             break;
 		case Op::LUI:
 			exmemNext.aluResult = static_cast<uint32_t>(idexCurr.immediate);
+            cout << "Execute: LUI" << endl;
 	    	break;
 		case Op::ORI:
             exmemNext.aluResult = idexCurr.readData1 | idexCurr.immediate;
+            cout << "Execute: OR" << endl;
             break;
 		case Op::SLTIU:
 			exmemNext.aluResult = (static_cast<uint32_t>(idexCurr.readData1) < static_cast<uint32_t>(idexCurr.immediate)) ? 1 : 0;
@@ -183,12 +215,12 @@ void CPU::memory() {
 	memwbNext.rd = exmemCurr.rd;
     memwbNext.aluResult = exmemCurr.aluResult;
     memwbNext.operation = exmemCurr.operation;
-
+    
+    
     int32_t lByte1, lByte2, lByte3, lByte4;
     uint8_t sByte1, sByte2, sByte3, sByte4;
-    switch(exmemCurr.operation) {
-        case Op::LW:
-            // Fetch 4 bytes from the data memory in little endian form.
+    switch(memwbNext.operation) {
+        case Op::LW:            // Fetch 4 bytes from the data memory in little endian form.
             lByte1 = dmemory[exmemCurr.aluResult];
             lByte2 = dmemory[exmemCurr.aluResult + 1];
             lByte3 = dmemory[exmemCurr.aluResult + 2];
@@ -202,19 +234,19 @@ void CPU::memory() {
 			memwbNext.memData = static_cast<uint32_t>(lByte1) & 0xFF;
             break;
 
-        case Op::SW:
+        case Op::SW: {
+			cout << "Store word called" << endl;
             // Separate bytes of readData2
-            sByte1 = (exmemCurr.readData2 >> 24) & 0xff000000;
-            sByte2 = (exmemCurr.readData2 >> 16) & 0xff0000;
-            sByte3 = (exmemCurr.readData2 >> 8) & 0xff00;
-            sByte4 = exmemCurr.readData2 & 0xff;
-            // Store in dataMem in little endian form
-            dmemory[exmemCurr.aluResult] = sByte4;
-            dmemory[exmemCurr.aluResult + 1] = sByte3;
-            dmemory[exmemCurr.aluResult + 1] = sByte2;
-            dmemory[exmemCurr.aluResult + 1] = sByte1;
+            uint32_t v = exmemCurr.readData2;
+            uint32_t a = exmemCurr.aluResult;
+            dmemory[a + 0] = static_cast<uint8_t>(v & 0xFF);
+            dmemory[a + 1] = static_cast<uint8_t>((v >> 8)  & 0xFF);
+            dmemory[a + 2] = static_cast<uint8_t>((v >> 16) & 0xFF);
+            dmemory[a + 3] = static_cast<uint8_t>((v >> 24) & 0xFF);
             break;
+        }
 		case Op::SH:
+			cout << "Store half called" << endl;
             // Separate bytes of readData2
 			sByte1 = (exmemCurr.readData2 >> 8) & 0xFF;  // high byte
 			sByte2 = exmemCurr.readData2 & 0xFF;         // low byte
@@ -223,7 +255,6 @@ void CPU::memory() {
 			dmemory[exmemCurr.aluResult]     = sByte2;   // lower byte
 			dmemory[exmemCurr.aluResult + 1] = sByte1;   // higher byte
             break;
-
         default:
             break;
     }
@@ -232,6 +263,31 @@ unsigned long CPU::readPC()
 {
 	return PC;
 }
+void CPU::writeBack() {
+    // registerFile[memwbCurr.rd] = memwbCurr.aluResult;
+    switch (memwbCurr.operation) {
+        case Op::LW:
+        case Op::LBU:
+            if (memwbCurr.rd != 0) registerFile[memwbCurr.rd] = memwbCurr.memData;
+            break;
+        case Op::ADDI:
+        case Op::LUI:
+        case Op::ORI:
+        case Op::SLTIU:
+        case Op::SRA:
+        case Op::SUB:
+        case Op::AND:
+        case Op::JALR:
+            if (memwbCurr.rd != 0) registerFile[memwbCurr.rd] = memwbCurr.aluResult;
+            break;
+        default:
+            // STOREs/BRANCHes don’t write a register
+            break;
+    }
+    // Ensure x0 is hard-wired to 0
+    registerFile[0] = 0;
+}
+
 // Increment counter based
 void CPU::incPC()
 {
@@ -240,7 +296,31 @@ void CPU::incPC()
 	else if (exmemCurr.takeBranch) PC = exmemCurr.branchTarget;
 	else                        PC += 4;
 }
+void CPU::tick() {
+    memwbCurr = memwbNext;
+    exmemCurr = exmemNext;
+    idexCurr  = idexNext;
+    ifidCurr  = ifidNext;
 
+    // clear "Next" for the next cycle
+    memwbNext = {};
+    exmemNext = {};
+    idexNext  = {};
+    ifidNext  = {};
+    
+}
+
+void CPU::printReg() {
+	std::cout << "--- Registers ---" << std::endl;
+    for (int i = 0; i < 32; ++i) {
+        std::cout << "x" << std::setw(2) << std::setfill('0') << i 
+                << ": " << std::dec << registerFile[i] 
+                << " (0x" << std::hex << registerFile[i] << ")" << std::dec;
+
+        if (i != 31) std::cout << " | ";
+    }
+    std::cout << std::endl;
+}
 void CPU::printAll() {
     std::cout << "=== CPU STATE ===" << std::endl;
 
