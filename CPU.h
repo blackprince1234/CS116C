@@ -3,6 +3,9 @@
 #include <stdio.h>
 #include<stdlib.h>
 #include <string>
+#include "control.h"
+#include "ALUControl.h"
+#include "ALU.h"
 using namespace std;
 
 
@@ -34,12 +37,13 @@ public:
 	void incPC();
 	void fetch();
 	void decode();
-	void execute();
+	// void execute();
 	void printAll();
-	void memory();
-	void writeBack();
+	// void memory();
+	// void writeBack();
 	void printReg();
-	void tick();
+	uint32_t cur_instruction = 0;
+	// void tick();
 	// Different types of operations
 	enum class Op {
 		ADDI,

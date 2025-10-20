@@ -47,35 +47,18 @@ int main(int argc, char* argv[])
 	    instMem[i++] = static_cast<char>(val & 0xFF);
 	}
 
-	int maxPC= i/4; 
-
-	/* Instantiate your CPU object here.  CPU class is the main class in this project that defines different components of the processor.
-	CPU class also has different functions for each stage (e.g., fetching an instruction, decoding, etc.).
-	*/
-
+	int maxPC = i;
 	CPU myCPU = CPU(instMem);  // call the approriate constructor here to initialize the processor...  
-
-	// Pass in instruction to the CPU
-
-	// make sure to create a variable for PC and resets it to zero (e.g., unsigned int PC = 0); 
-
-	/* OPTIONAL: Instantiate your Instruction object here. */
-	//Instruction myInst; 
 	
 	bool done = true;
 	// myCPU.printAll();
-	while (done == true) // processor's main loop. Each iteration is equal to one clock cycle.  
+	while (myCPU.readPC() < maxPC) // processor's main loop. Each iteration is equal to one clock cycle.  
 	{
 		myCPU.fetch();        // fill ifidNext
 		myCPU.decode();       // produce idexNext
-		myCPU.execute();      // produce exmemNext
-		myCPU.memory();       // produce memwbNext
-		myCPU.writeBack();    // <-- actually commit to registerFile using memwbCurr
+		// myCPU.execute();      // produce exmemNext
 		myCPU.incPC();        // update PC with branch/jump/seq
-		myCPU.tick();         // latch *Next into *Curr and clear *Next
 		// myCPU.printReg();
-		if (myCPU.readPC() > maxPC)
-			break;
 	}
 	int a0 = 0;
 	int a1 = 0;  
