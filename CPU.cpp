@@ -21,11 +21,6 @@ void CPU::fetch() {
 		uint32_t byte2 = static_cast<uint8_t>(instMemory[PC + 1]);
 		uint32_t byte3 = static_cast<uint8_t>(instMemory[PC + 2]);
 		uint32_t byte4 = static_cast<uint8_t>(instMemory[PC + 3]);
-        // cout << "Printing bytes" << endl;
-        // cout << byte1 << endl;
-        // cout << byte2 << endl;
-        // cout << byte3 << endl;
-        // cout << byte4 << endl;
 	    ifidCurr.instruction = (byte4 << 24) + (byte3 << 16) + (byte2 << 8) + byte1;
         cur_instruction = (byte4 << 24) + (byte3 << 16) + (byte2 << 8) + byte1;
 	}
@@ -40,22 +35,15 @@ void CPU::decode() {
     uint32_t rd = (ifidCurr.instruction >> 7) & 0x1F;
 
 	std::cout << "Instruction (32-bit): " << std::bitset<32>(cur_instruction) << '\n';
-    // std::cout << "Opcode     (7-bit):  " << std::bitset<7>(opcode) << '\n';
-    // std::cout << "Func3      (3-bit):  " << std::bitset<3>(func3) << '\n';
-    // std::cout << "Func7      (7-bit):  " << std::bitset<7>(func7) << '\n';
-    // std::cout << "RS1        (5-bit):  " << std::bitset<5>(rs1) << '\n';
-    // std::cout << "RS2        (5-bit):  " << std::bitset<5>(rs2) << '\n';
-    std::cout << "Opcode     (7-bit):  " << std::bitset<7>(opcode) << '\n';
-
     Controller controller(opcode);                              // Pass in the last 7 bits to the controller
-    ALUControl aluControl(controller.ALUOp, func3, func7);      // Pass to the aluController
+    ALUControl aluControl(controller.ALUOp, func3, func7, controller);      // Pass to the aluController
     aluControl.control = controller;
     aluControl.set_output();
     // int data1, int data2, int data3, ALUControl* aluControl, int32_t (&regFile)[32]
     ALU alu(rs1, rs2, rd, &aluControl, registerFile, ifidCurr.instruction, dmemory, PC);
     alu.compute();
     alu.writeBack();
-    printReg();
+    // printReg();
     // TODO: Update the PC (need to be passed by reference)
     alu.setPC();
 }
@@ -86,24 +74,24 @@ void CPU::printReg() {
     std::cout << std::endl;
 }
 void CPU::printAll() {
-    std::cout << "=== CPU STATE ===" << std::endl;
+    // std::cout << "=== CPU STATE ===" << std::endl;
 
-    // Print Program Counter
-    std::cout << "PC: " << PC << std::endl;
+    // // Print Program Counter
+    // std::cout << "PC: " << PC << std::endl;
 
-    // Print Registers
-    std::cout << "--- Registers ---" << std::endl;
-    for (int i = 0; i < 32; ++i) {
-        std::cout << "x" << std::setw(2) << std::setfill('0') << i 
-                  << ": " << std::dec << registerFile[i] 
-                  << " (0x" << std::hex << registerFile[i] << ")" << std::dec << std::endl;
-    }
+    // // Print Registers
+    // std::cout << "--- Registers ---" << std::endl;
+    // for (int i = 0; i < 32; ++i) {
+    //     std::cout << "x" << std::setw(2) << std::setfill('0') << i 
+    //               << ": " << std::dec << registerFile[i] 
+    //               << " (0x" << std::hex << registerFile[i] << ")" << std::dec << std::endl;
+    // }
 
-    // Print part of Data Memory (first 16 bytes)
-    std::cout << "--- Data Memory (first 16 bytes) ---" << std::endl;
-    for (int i = 0; i < 16; ++i) {
-        std::cout << "dmemory[" << i << "]: " << dmemory[i] << std::endl;
-    }
+    // // Print part of Data Memory (first 16 bytes)
+    // std::cout << "--- Data Memory (first 16 bytes) ---" << std::endl;
+    // for (int i = 0; i < 16; ++i) {
+    //     std::cout << "dmemory[" << i << "]: " << dmemory[i] << std::endl;
+    // }
 
-    std::cout << "==================" << std::endl;
+    // std::cout << "==================" << std::endl;
 }

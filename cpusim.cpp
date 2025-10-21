@@ -62,9 +62,10 @@ int main(int argc, char* argv[])
 		// } else {
 		//     myCPU.incPC();                // normal PC += 4
 		// }
-		// myCPU.incPC();        // update PC with branch/jump/seq
+		myCPU.incPC();        // update PC with branch/jump/seq
 		// myCPU.printReg();
 	}
+	myCPU.printReg();
 	int a0 = 0;
 	int a1 = 0;  
 	// print the results (you should replace a0 and a1 with your own variables that point to a0 and a1)

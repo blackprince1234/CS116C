@@ -1,7 +1,7 @@
 #include "ALUControl.h"
 #include <iostream> 
 using namespace std;
-ALUControl::ALUControl(int aluOp, uint32_t func3, uint32_t func7): control(0) { 
+ALUControl::ALUControl(int aluOp, uint32_t func3, uint32_t func7, Controller& control): control(control) { 
     this -> aluOp = aluOp;
     this -> func3 = func3;
     this -> func7 = func7;
@@ -43,7 +43,9 @@ void ALUControl::set_output() {
         // 10 00  (ADD)
         four_bit_output = 0b1000;
     }
+    // Never called for some reason
     else if(aluOp == 0x3) {
+        cout << "EXTENDING" << endl;
         // 11 00  (SUB)
         four_bit_output = 0b1100;
     }

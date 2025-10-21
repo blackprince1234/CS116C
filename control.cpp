@@ -5,6 +5,7 @@ using namespace std;
 // Takes in the OPcode (last 7 bits)
 Controller::Controller(int instruction) {
     // Assign member variables based on the instruction
+    cout << "Instruction: " << instruction << endl;
     if(instruction == 0b0010011) {  // I-type
         RegWrite = 1, ALUSrc = 1;
         branch = 0, MemRead = 0, MemWr = 0, MemToReg = 0, is_lui = 0;
@@ -31,14 +32,20 @@ Controller::Controller(int instruction) {
         ALUOp = 0b10;        // ADD
     }   
     else if (instruction == 0b1100011) {     // BEQ
+        cout << "BNE-- Subtract" << endl;
         branch = 1;
+
         is_lui = MemRead = MemToReg = RegWrite = MemWr = ALUSrc = 0;
         ALUOp = 0b11;    // SUBTRACT
     }
     else if (instruction == 0b1100111) {    // JALR
+        cout << "JALR-- Subtract" << endl;
         branch = 1;
         is_lui = MemRead = MemToReg = RegWrite = MemWr = ALUSrc= 0;
         ALUOp = 0b11;    // SUBTRACT
+    }
+    else {
+        cout << "Instruction not recognzied: " << instruction << endl;
     }
     //TODO: Add JALR
 }

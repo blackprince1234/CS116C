@@ -10,7 +10,7 @@ ALU::ALU(
     int32_t (&regFile)[32],     // Reference to 32-register file
     int instruction,
     uint8_t (&mem)[1000000],       // Reference to memory
-    int& pc
+    unsigned long& pc
 ): regs(regFile), memory(mem), pc(pc) // Member initializer list
 {
     this->rs1 = data1;
@@ -88,12 +88,15 @@ void ALU::compute() {
             } 
             break;
         }
+        // 0xC is never called for some reason
         case 0xC: // Branch (BNE) or 
+            cout << "BRNACCHING" << endl;
             if(aluControl->control.branch == 0) {   // SUB
                 result = regs[rs1] - regs[rs2];
             }
             // Either BNE or JALR
             else {
+                cout << "BRANCHING!!!!" << endl;
                 uint32_t opcode = instruction & 0x7F;
                 if(opcode == 0x67) { //JALR
                     int32_t immI = compute_immediate();           // I-type imm
@@ -131,14 +134,14 @@ void ALU::compute() {
 
 }
 void ALU::setPC() {
-    if(pc_write){
-        pc = pc_target;
-    }
-    else {
-        pc += 4;
-    }      
-    pc_target = 0;
-    pc_write = false;
+    // if(pc_write){
+    //     pc = pc_target;
+    // }
+    // else {
+    //     pc += 4;
+    // }      
+    // pc_target = 0;
+    // pc_write = false;
 }
 // Either loading from the memory, writing to memory, or writing to registers
 void ALU::writeBack() {

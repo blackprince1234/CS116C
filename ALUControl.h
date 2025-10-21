@@ -4,7 +4,7 @@
 #pragma once
 class ALUControl {
     public:
-        ALUControl(int aluOp, uint32_t func3, uint32_t func7);
+        ALUControl(int aluOp, uint32_t func3, uint32_t func7, Controller& control);
         Controller control;
         // Need additional 2 variables if ALUOp = RType or IType
         int func3;
