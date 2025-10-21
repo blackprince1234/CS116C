@@ -1,5 +1,6 @@
 #include "CPU.h"
 #include <iomanip> // For testing, remove later
+#include <cstring>
 using namespace std;
 CPU::CPU(char inmemory[4096])
 {
@@ -34,7 +35,7 @@ void CPU::decode() {
     uint32_t rs2 = (ifidCurr.instruction >> 20) & 0x1f;
     uint32_t rd = (ifidCurr.instruction >> 7) & 0x1F;
 
-	std::cout << "Instruction (32-bit): " << std::bitset<32>(cur_instruction) << '\n';
+	// std::cout << "Instruction (32-bit): " << std::bitset<32>(cur_instruction) << '\n';
     Controller controller(opcode);                              // Pass in the last 7 bits to the controller
     ALUControl aluControl(controller.ALUOp, func3, func7, controller);      // Pass to the aluController
     aluControl.control = controller;
@@ -43,7 +44,7 @@ void CPU::decode() {
     ALU alu(rs1, rs2, rd, &aluControl, registerFile, ifidCurr.instruction, dmemory, PC);
     alu.compute();
     alu.writeBack();
-    printReg();
+    // printReg();
     // TODO: Update the PC (need to be passed by reference)
     alu.setPC();
 }
@@ -52,7 +53,6 @@ void CPU::decode() {
 
 unsigned long CPU::readPC()
 {
-    cout << "Current pc: " << PC << endl;
 	return PC;
 }
 

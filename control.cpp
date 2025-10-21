@@ -32,14 +32,11 @@ Controller::Controller(int instruction) {
         ALUOp = 0b10;        // ADD
     }   
     else if (instruction == 0b1100011) {     // BEQ
-        cout << "BNE-- Subtract" << endl;
         branch = 1;
-
         is_lui = MemRead = MemToReg = RegWrite = MemWr = ALUSrc = 0;
         ALUOp = 0b11;    // SUBTRACT
     }
     else if (instruction == 0b1100111) {    // JALR
-        cout << "JALR-- Subtract" << endl;
         is_lui = MemRead = MemToReg = MemWr = ALUSrc= 0;
         RegWrite = 1, branch = 1;
         ALUOp = 0b11;    // SUBTRACT

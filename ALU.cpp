@@ -25,7 +25,7 @@ ALU::ALU(
 int ALU::compute_immediate() {
     return (int32_t)instruction >> 20; 
 }
-auto ALU::getImmS() {
+int32_t ALU::getImmS() {
     int32_t imm = ((instruction >> 7) & 0x1F) | (((instruction >> 25) & 0x7F) << 5);
     // sign-extend 12-bit
     if (imm & 0x800) imm |= 0xFFFFF000;
@@ -125,7 +125,7 @@ void ALU::compute() {
 bool ALU::setPC() {
     if(pc_write){
         pc = pc_target;
-        cout << "Jumping to target: " << pc << endl;
+        // cout << "Jumping to target: " << pc << endl;
         pc_write = false;
         return true;
     }
@@ -187,9 +187,9 @@ void ALU::writeBack() {
         
     }
     // Jump
-    else if(aluControl->control.branch == 1) {
-        cout << "Processing jumps" << endl;
-    }
+    // else if(aluControl->control.branch == 1) {
+    //     cout << "Processing jumps" << endl;
+    // }
 }
 // TODO: After computing the result, either add to the register file, or write it to the memory
 // TODO: Also need to differentiate between LBUI and LW, and SW and SH.

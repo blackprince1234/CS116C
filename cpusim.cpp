@@ -58,11 +58,10 @@ int main(int argc, char* argv[])
 		myCPU.decode();       // produce idexNext
 		
 	}
-	myCPU.printReg();
-	int a0 = 0;
-	int a1 = 0;  
+	// myCPU.printReg();
+	int32_t a0 = myCPU.registerFile[10];
+	int32_t a1 = myCPU.registerFile[11];  
 	// print the results (you should replace a0 and a1 with your own variables that point to a0 and a1)
-	// myCPU.printAll();
 	cout << "(" << a0 << "," << a1 << ")" << endl;
 	
 	return 0;

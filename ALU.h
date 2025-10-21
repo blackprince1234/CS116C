@@ -2,6 +2,8 @@
 #include <iostream>
 #include "ALUControl.h"
 #include "control.h"
+#pragma once
+
 
 class ALU{
     public:
@@ -23,5 +25,5 @@ class ALU{
         void writeBack();
         bool setPC();
         int compute_immediate();
-        auto getImmS();
+        int32_t getImmS();
 };
