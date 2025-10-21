@@ -62,6 +62,7 @@
         "compare": "cpp",
         "algorithm": "cpp",
         "__memory": "cpp",
-        "filesystem": "cpp"
+        "filesystem": "cpp",
+        "sstream": "cpp"
     }
 }

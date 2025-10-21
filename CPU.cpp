@@ -39,11 +39,11 @@ void CPU::decode() {
     ALUControl aluControl(controller.ALUOp, func3, func7, controller);      // Pass to the aluController
     aluControl.control = controller;
     aluControl.set_output();
-    // int data1, int data2, int data3, ALUControl* aluControl, int32_t (&regFile)[32]
+    // TODO: No need for instruction, since it's stored as part of 
     ALU alu(rs1, rs2, rd, &aluControl, registerFile, ifidCurr.instruction, dmemory, PC);
     alu.compute();
     alu.writeBack();
-    // printReg();
+    printReg();
     // TODO: Update the PC (need to be passed by reference)
     alu.setPC();
 }
@@ -52,6 +52,7 @@ void CPU::decode() {
 
 unsigned long CPU::readPC()
 {
+    cout << "Current pc: " << PC << endl;
 	return PC;
 }
 

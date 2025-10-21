@@ -21,7 +21,7 @@ class ALU{
         uint8_t (&memory)[1000000];
         void compute();
         void writeBack();
-        void setPC();
+        bool setPC();
         int compute_immediate();
         auto getImmS();
 };

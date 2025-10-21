@@ -19,11 +19,11 @@ void ALUControl::set_output() {
         }
         // orI (00 01)
         else if(func3 == 0x6) {
-            four_bit_output = 0x0001;
+            four_bit_output = 0b0001;
         }
         // SLTIU (00 10)
         else if(func3 == 0x3) {
-            four_bit_output = 0x0010;
+            four_bit_output = 0b0010;
         }
     }
     // R-type, need to check func3 and func7
@@ -45,7 +45,7 @@ void ALUControl::set_output() {
     }
     // Never called for some reason
     else if(aluOp == 0x3) {
-        cout << "EXTENDING" << endl;
+        // cout << "EXTENDING" << endl;
         // 11 00  (SUB)
         four_bit_output = 0b1100;
     }
