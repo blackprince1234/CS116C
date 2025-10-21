@@ -11,45 +11,40 @@ void ALUControl::set_output() {
     if (aluOp == 0x0) {
         // LUI (00 11)
         if(control.is_lui == 1) {
-            // cout << "LUI Operation" << endl;
-            four_bit_output = 0x3;
+            four_bit_output = 0b0011;
         }
         // addI (00 00 )
         else if (func3 == 0x0) {
-            // cout << "Add operation" << endl;
-            four_bit_output = 0x0;
+            four_bit_output = 0b0000;
         }
         // orI (00 01)
         else if(func3 == 0x6) {
-            four_bit_output = 0x1;
+            four_bit_output = 0x0001;
         }
         // SLTIU (00 10)
         else if(func3 == 0x3) {
-            four_bit_output = 0x2;
+            four_bit_output = 0x0010;
         }
     }
     // R-type, need to check func3 and func7
     else if (aluOp == 0x1) {
-        // SUB (01 00)
-        if (func3 == 0x0) {
-            four_bit_output = 0x4;
+        if (func3 == 0x0) { // SUB (01 00)
+            four_bit_output = 0b0100;
         }
-        // AND (01 01)
-        else if(func3 == 0x7) {
-            four_bit_output = 0x5;
+        else if(func3 == 0x7) { // AND (01 01)
+            four_bit_output = 0b0101;
         }
-        // SRA (01 10)
-        else if(func3 == 0x5) {
-            four_bit_output = 0x6;
+        else if(func3 == 0x5) { // SRA (01 10)
+            four_bit_output = 0b0110;
         }
     }
     // For LW, LBU, SH, and SW
     else if (aluOp == 0x2) {
         // 10 00  (ADD)
-        four_bit_output = 0x8;
+        four_bit_output = 0b1000;
     }
     else if(aluOp == 0x3) {
         // 11 00  (SUB)
-        four_bit_output = 0xC;
+        four_bit_output = 0b1100;
     }
 }

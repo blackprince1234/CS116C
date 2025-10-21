@@ -52,10 +52,12 @@ void CPU::decode() {
     aluControl.control = controller;
     aluControl.set_output();
     // int data1, int data2, int data3, ALUControl* aluControl, int32_t (&regFile)[32]
-    ALU alu(rs1, rs2, rd, &aluControl, registerFile, ifidCurr.instruction, dmemory);
+    ALU alu(rs1, rs2, rd, &aluControl, registerFile, ifidCurr.instruction, dmemory, PC);
     alu.compute();
     alu.writeBack();
     printReg();
+    // TODO: Update the PC (need to be passed by reference)
+    alu.setPC();
 }
 
 // Execute the actual task

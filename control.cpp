@@ -5,16 +5,6 @@ using namespace std;
 // Takes in the OPcode (last 7 bits)
 Controller::Controller(int instruction) {
     // Assign member variables based on the instruction
-    
-    // cout << "Instruction: " << instruction << endl;
-    // int is_lui;
-    //     int branch;
-    //     int MemRead;
-    //     int MemToReg;
-    //     int ALUOp;
-    //     int ALUSrc;
-    //     int MemWr;
-    //     int RegWrite;	
     if(instruction == 0b0010011) {  // I-type
         RegWrite = 1, ALUSrc = 1;
         branch = 0, MemRead = 0, MemWr = 0, MemToReg = 0, is_lui = 0;
@@ -28,27 +18,27 @@ Controller::Controller(int instruction) {
     else if (instruction == 0b0110011) {    // R-Type
         RegWrite = 1;
         ALUSrc = 0, branch = 0, MemRead = 0, MemWr = 0, MemToReg = 0, is_lui = 0;
-        ALUOp = 0x1;
+        ALUOp = 0b01;
     }
     else if (instruction == 0b0000011) {    // LW
         RegWrite = ALUSrc = MemRead = MemToReg = 1;
         branch = MemWr = is_lui = 0;
-        ALUOp = 0x2;    // ADD
+        ALUOp = 0b10;    // ADD
     }
     else if (instruction == 0b0100011) {    // SW
         ALUSrc = MemWr = 1;
         branch = MemRead = MemToReg = RegWrite = is_lui = 0;
-        ALUOp = 0x2;        // ADD
+        ALUOp = 0b10;        // ADD
     }   
     else if (instruction == 0b1100011) {     // BEQ
         branch = 1;
         is_lui = MemRead = MemToReg = RegWrite = MemWr = ALUSrc = 0;
-        ALUOp = 0x3;    // SUBTRACT
+        ALUOp = 0b11;    // SUBTRACT
     }
     else if (instruction == 0b1100111) {    // JALR
         branch = 1;
         is_lui = MemRead = MemToReg = RegWrite = MemWr = ALUSrc= 0;
-        ALUOp = 0x3;    // SUBTRACT
+        ALUOp = 0b11;    // SUBTRACT
     }
     //TODO: Add JALR
 }
